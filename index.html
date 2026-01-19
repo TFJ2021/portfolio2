@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TFJ — Developer & Chronically Online</title>
+
+    <!-- Haha -->
+    <!-- Is someone looking at the source code right now? :3 -->
+    <!-- I'm sorry for this huge file lmao -->
+
+    <!-- Fonts -->
+    <link
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+            rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0"/>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel (Version 7) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- GSAP & Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <!-- Lenis -->
+    <script src="https://unpkg.com/lenis@1.0.45/dist/lenis.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans"', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'monospace'],
+                        display: ['"Bebas Neue"', 'sans-serif'],
+                    },
+                    colors: {
+                        background: 'oklch(0.05 0 0)',
+                        foreground: 'oklch(0.98 0 0)',
+                        card: 'oklch(0.09 0 0)',
+                        'card-foreground': 'oklch(0.98 0 0)',
+                        popover: 'oklch(0.08 0 0)',
+                        'popover-foreground': 'oklch(0.98 0 0)',
+                        primary: 'oklch(0.98 0 0)',
+                        'primary-foreground': 'oklch(0.05 0 0)',
+                        secondary: 'oklch(0.15 0 0)',
+                        'secondary-foreground': 'oklch(0.9 0 0)',
+                        muted: 'oklch(0.25 0 0)',
+                        'muted-foreground': 'oklch(0.68 0 0)',
+                        accent: 'oklch(0.58 0.2 20)',
+                        'accent-foreground': 'oklch(0.98 0 0)',
+                        destructive: 'oklch(0.55 0.22 25)',
+                        'destructive-foreground': 'oklch(0.98 0 0)',
+                        border: 'oklch(0.2 0 0)',
+                        input: 'oklch(0.15 0 0)',
+                        ring: 'oklch(0.58 0.24 25)',
+                    },
+                    borderRadius: {
+                        lg: 'var(--radius)',
+                        md: 'calc(var(--radius) - 2px)',
+                        sm: 'calc(var(--radius) - 4px)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            :root {
+                --radius: 0rem;
+
+                --font-bebas: "Bebas Neue", sans-serif;
+            }
+
+            * {
+                @apply border-border;
+            }
+
+            html, body {
+                @apply bg-background text-foreground overflow-x-hidden max-w-[100vw];
+                scrollbar-width: thin;
+                scrollbar-color: hsl(0, 0%, 24%) hsl(0, 0%, 8%);
+            }
+
+            ::selection {
+                background: oklch(0.58 0.2 20);
+                color: oklch(0.98 0 0);
+            }
+
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+
+        /* Noise Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Grid Background */
+        .grid-bg {
+            background-image: linear-gradient(to right, oklch(0.2 0 0) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.2 0 0) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const {useState, useEffect, useRef, useCallback, createContext, useContext, useMemo} = React;
+
+    // Register GSAP Plugin
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Util
+    function cn(...inputs) {
+        return inputs.filter(Boolean).join(" ");
+    }
+
+    // Icons replaced with Google Material Symbols
+
+
+    // --- Components ---
+    function SmoothScroll({children}) {
+        useEffect(() => {
+            const lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                orientation: "vertical",
+                smoothWheel: true,
+            });
+
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+
+            requestAnimationFrame(raf);
+
+            lenis.on('scroll', ScrollTrigger.update)
+            gsap.ticker.add((time) => {
+                lenis.raf(time * 1000)
+            })
+            gsap.ticker.lagSmoothing(0)
+
+            return () => {
+                lenis.destroy();
+                gsap.ticker.remove(lenis.raf);
+            };
+        }, []);
+        return children;
+    }
+
+    // Custom cursor
+    function GlobalCursor() {
+        const cursorRef = useRef(null)
+        const [isVisible, setIsVisible] = useState(false)
+        const [isHoveringLink, setIsHoveringLink] = useState(false)
+
+        useEffect(() => {
+            const cursor = cursorRef.current
+            if (!cursor) return
+
+            const onMouseMove = (e) => {
+                const target = e.target
+                const isHero = target.closest("#hero")
+                const isClickable = target.closest("a, button, [role='button'], input, textarea")
+
+                if (isHero) {
+                    setIsVisible(false)
+                } else {
+                    setIsVisible(true)
+                    setIsHoveringLink(!!isClickable)
+
+                    gsap.to(cursor, {
+                        x: e.clientX,
+                        y: e.clientY,
+                        duration: 0.15,
+                        ease: "power2.out"
+                    })
+                }
+            }
+
+            window.addEventListener("mousemove", onMouseMove)
+            return () => window.removeEventListener("mousemove", onMouseMove)
+        }, [])
+
+        return (
+            <div
+                ref={cursorRef}
+                className={cn(
+                    "pointer-events-none fixed top-0 left-0 z-[9999] -translate-x-1/2 -translate-y-1/2",
+                    "flex items-center justify-center",
+                    "transition-opacity duration-300",
+                    isVisible ? "opacity-100" : "opacity-0"
+                )}
+            >
+                <div
+                    className={cn(
+                        "relative rounded-full bg-accent transition-all duration-300 shadow-[0_0_10px_var(--accent)]",
+                        isHoveringLink ? "w-8 h-8 opacity-50" : "w-3 h-3 opacity-90"
+                    )}
+                />
+                <div
+                    className={cn(
+                        "absolute rounded-full border border-accent/30 transition-all duration-500",
+                        isHoveringLink ? "w-12 h-12" : "w-6 h-6"
+                    )}
+                />
+            </div>
+        )
+    }
+
+    // Adds animated noise
+    function AnimatedNoise({opacity = 0.05, className}) {
+        const canvasRef = useRef(null);
+        useEffect(() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            let animationId;
+            let frame = 0;
+            const resize = () => {
+                canvas.width = canvas.offsetWidth / 2;
+                canvas.height = canvas.offsetHeight / 2;
+            };
+            const generateNoise = () => {
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const value = Math.random() * 255;
+                    data[i] = value;
+                    data[i + 1] = value;
+                    data[i + 2] = value;
+                    data[i + 3] = 255;
+                }
+                ctx.putImageData(imageData, 0, 0);
+            };
+            const animate = () => {
+                frame++;
+                if (frame % 2 === 0) generateNoise();
+                animationId = requestAnimationFrame(animate);
+            };
+            resize();
+            window.addEventListener("resize", resize);
+            animate();
+            return () => {
+                window.removeEventListener("resize", resize);
+                cancelAnimationFrame(animationId);
+            };
+        }, []);
+        return (
+            <canvas
+                ref={canvasRef}
+                className={className}
+                style={{
+                    position: "absolute", inset: 0, width: "100%", height: "100%",
+                    pointerEvents: "none", opacity, mixBlendMode: "overlay"
+                }}
+            />
+        );
+    }
+
+    // --- Split Flap Text & Audio ---
+    const SplitFlapAudioContext = createContext(null);
+    const useSplitFlapAudio = () => useContext(SplitFlapAudioContext);
+
+    function SplitFlapAudioProvider({children}) {
+        const [isMuted, setIsMuted] = useState(true);
+        const audioContextRef = useRef(null);
+
+        const getAudioContext = useCallback(() => {
+            if (!audioContextRef.current) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioContextRef.current = new AudioContextClass();
+            }
+            return audioContextRef.current;
+        }, []);
+
+        const playClick = useCallback(() => {
+            if (isMuted) return;
+            if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                if (ctx.state === "suspended") ctx.resume();
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                const lowpass = ctx.createBiquadFilter();
+
+                oscillator.type = "square";
+                oscillator.frequency.setValueAtTime(800 + Math.random() * 400, ctx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.015);
+
+                filter.type = "bandpass";
+                filter.frequency.setValueAtTime(1200, ctx.currentTime);
+                filter.Q.setValueAtTime(0.8, ctx.currentTime);
+
+                lowpass.type = "lowpass";
+                lowpass.frequency.value = 2500;
+                lowpass.Q.value = 0.5;
+
+                gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.02);
+
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(lowpass);
+                lowpass.connect(ctx.destination);
+
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.02);
+            } catch (e) {
+            }
+        }, [isMuted, getAudioContext]);
+
+        const toggleMute = useCallback(() => {
+            setIsMuted(prev => !prev);
+            if (isMuted) {
+                try {
+                    const ctx = getAudioContext();
+                    if (ctx && ctx.state === "suspended") ctx.resume();
+                } catch (e) {
+                }
+            }
+        }, [isMuted, getAudioContext]);
+
+        const value = useMemo(() => ({isMuted, toggleMute, playClick}), [isMuted, toggleMute, playClick]);
+        return <SplitFlapAudioContext.Provider value={value}>{children}</SplitFlapAudioContext.Provider>;
+    }
+
+    function SplitFlapMuteToggle({className = ""}) {
+        const audio = useSplitFlapAudio();
+        if (!audio) return null;
+        return (
+            <button
+                onClick={audio.toggleMute}
+                className={`inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors duration-200 ${className}`}
+            >
+                {audio.isMuted ? <span className="material-symbols-rounded text-base">volume_off</span> :
+                    <span className="material-symbols-rounded text-base">volume_up</span>}
+                <span>{audio.isMuted ? "Sound Off" : "Sound On"}</span>
+            </button>
+        );
+    }
+
+    // All cars
+    const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+
+    // One single split char
+    function SplitFlapChar({char, index, animationKey, skipEntrance, speed, playClick}) {
+        const displayChar = CHARSET.includes(char) ? char : " ";
+        const isSpace = char === " ";
+        // Initialize with space to prevent premature target char display
+        const [currentChar, setCurrentChar] = useState(" ");
+        const [isSettled, setIsSettled] = useState(false);
+        const intervalRef = useRef(null);
+        const timeoutRef = useRef(null);
+        const hasTriggeredRef = useRef(false);
+
+        const tileDelay = 0.15 * index;
+        const bgColor = isSettled ? "hsl(0, 0%, 0%)" : "rgba(220, 38, 38, 0.2)";
+        const textColor = isSettled ? "#ffffff" : "#dc2626";
+
+        useEffect(() => {
+            // Prevent re-triggering if already settled for this animationKey
+            if (hasTriggeredRef.current === animationKey) return;
+            hasTriggeredRef.current = animationKey;
+
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+            if (isSpace) {
+                setCurrentChar(" ");
+                setIsSettled(true);
+                return;
+            }
+
+            setIsSettled(false);
+            const baseFlips = 12;
+            const startDelay = tileDelay * 500;
+            let flipIndex = 0;
+            let hasStartedSettling = false;
+
+            timeoutRef.current = setTimeout(() => {
+                intervalRef.current = setInterval(() => {
+                    const settleThreshold = baseFlips + index * 4;
+                    if (flipIndex >= settleThreshold && !hasStartedSettling) {
+                        hasStartedSettling = true;
+                        if (intervalRef.current) clearInterval(intervalRef.current);
+                        setCurrentChar(displayChar);
+                        setIsSettled(true);
+                        if (playClick) playClick();
+                        return;
+                    }
+                    setCurrentChar(CHARSET[Math.floor(Math.random() * CHARSET.length)]);
+                    if (flipIndex % 2 === 0 && playClick) playClick();
+                    flipIndex++;
+                }, speed);
+            }, startDelay);
+
+            return () => {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            }
+        }, [displayChar, isSpace, tileDelay, animationKey, index, speed]);
+
+        if (isSpace) return <div style={{width: "0.3em", fontSize: "clamp(4rem, 15vw, 14rem)"}}/>;
+
+        const ref = useRef(null);
+        useEffect(() => {
+            if (ref.current) {
+                gsap.fromTo(ref.current, {opacity: 0, y: 20}, {
+                    opacity: 1,
+                    y: 0,
+                    delay: tileDelay,
+                    duration: 0.4,
+                    ease: "power2.out"
+                });
+            }
+        }, [tileDelay]);
+
+        return (
+            <div
+                ref={ref}
+                className="relative overflow-hidden flex items-center justify-center font-[family-name:var(--font-bebas)]"
+                style={{
+                    fontSize: "clamp(4rem, 15vw, 14rem)",
+                    width: "0.65em",
+                    height: "1.05em",
+                    backgroundColor: bgColor,
+                    transformStyle: "preserve-3d",
+                    transition: "background-color 0.2s ease",
+                }}
+            >
+                <div className="absolute inset-x-0 top-1/2 h-[1px] bg-black/20 pointer-events-none z-10"/>
+                <div className="absolute inset-x-0 top-0 bottom-1/2 flex items-end justify-center overflow-hidden">
+                        <span className="block translate-y-[0.52em] leading-none transition-colors duration-150"
+                              style={{color: textColor}}>{currentChar}</span>
+                </div>
+                <div className="absolute inset-x-0 top-1/2 bottom-0 flex items-start justify-center overflow-hidden">
+                        <span className="-translate-y-[0.52em] leading-none transition-colors duration-150"
+                              style={{color: textColor}}>{currentChar}</span>
+                </div>
+            </div>
+        );
+    }
+
+    // Flip text / Title
+    function SplitFlapText({text, className = "", speed = 50}) {
+        const chars = useMemo(() => text.split(""), [text]);
+        const [animationKey, setAnimationKey] = useState(0);
+        const audio = useSplitFlapAudio();
+        const isMutedRef = useRef(audio?.isMuted ?? true);
+
+        useEffect(() => {
+            if (audio && isMutedRef.current !== audio.isMuted) {
+                isMutedRef.current = audio.isMuted;
+                // Only bump the key if unmuting, to allow sound effects to play with a fresh animation
+                if (!audio.isMuted) setAnimationKey(prev => prev + 1);
+            }
+        }, [audio]);
+
+        return (
+            <div className={`inline-flex gap-[0.08em] items-center ${className}`} aria-label={text}
+                 style={{perspective: "1000px"}}>
+                {chars.map((char, index) => (
+                    <SplitFlapChar key={index} char={char.toUpperCase()} index={index} animationKey={animationKey}
+                                   speed={speed} playClick={audio?.playClick}/>
+                ))}
+            </div>
+        );
+    }
+
+    // --- Scramble Text ---
+    const GLYPHS = "!@#$%^&*()_+-=<>?/\\[]{}Xx";
+
+    // Scrambles text
+    function runScrambleAnimation(text, duration, setDisplayText, onComplete) {
+        const lockedIndices = new Set();
+        const finalChars = text.split("");
+        const totalChars = finalChars.length;
+        const scrambleObj = {progress: 0};
+        return gsap.to(scrambleObj, {
+            progress: 1, duration, ease: "power2.out",
+            onUpdate: () => {
+                const numLocked = Math.floor(scrambleObj.progress * totalChars);
+                for (let i = 0; i < numLocked; i++) lockedIndices.add(i);
+                const newDisplay = finalChars.map((char, i) => lockedIndices.has(i) ? char : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]).join("");
+                setDisplayText(newDisplay);
+            },
+            onComplete: () => {
+                setDisplayText(text);
+                onComplete?.();
+            }
+        });
+    }
+
+    function ScrambleTextOnHover({text, className, duration = 0.4, as: Component = "span", onClick}) {
+        const [displayText, setDisplayText] = useState(text);
+        const isAnimating = useRef(false);
+        const tweenRef = useRef(null);
+
+        const handleMouseEnter = useCallback(() => {
+            if (isAnimating.current) return;
+            isAnimating.current = true;
+            if (tweenRef.current) tweenRef.current.kill();
+            setDisplayText(text.split("").map(() => GLYPHS[Math.floor(Math.random() * GLYPHS.length)]).join(""));
+            tweenRef.current = runScrambleAnimation(text, duration, setDisplayText, () => {
+                isAnimating.current = false;
+            });
+        }, [text, duration]);
+
+        return <Component className={className} onMouseEnter={handleMouseEnter}
+                          onClick={onClick}>{displayText}</Component>;
+    }
+
+    // Glitch chevron
+    function BitmapChevron({className}) {
+        return (
+            <svg
+                width="18"
+                height="18"
+                viewBox="0 0 27 27"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={className}
+            >
+                <path
+                    d="M3.85715 3.85715H19.2857L23.0553 7.64066L17.5163 13.1595L22.8462 17.5055V23.1429H17.5055V13.1703L7.65696 22.9832L3.8874 19.2L13.9259 9.19781H3.85715V3.85715Z"
+                    fill="currentColor"
+                />
+            </svg>
+        )
+    }
+
+    // --- Side Nav ---
+    function SideNav() {
+        const [activeSection, setActiveSection] = useState("hero");
+        const navItems = [
+            {id: "hero", label: "Home"},
+            {id: "updates", label: "Updates"},
+            {id: "work", label: "Projects"},
+            {id: "skills", label: "Skills"},
+            {id: "principles", label: "Philosophy"},
+            {id: "colophon", label: "Info"},
+        ];
+
+        // Gets and marks right section
+        useEffect(() => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) setActiveSection(entry.target.id);
+                });
+            }, {threshold: 0.3});
+            navItems.forEach(({id}) => {
+                const element = document.getElementById(id);
+                if (element) observer.observe(element);
+            });
+            return () => observer.disconnect();
+        }, []);
+
+        return (
+            <nav
+                className="fixed left-0 top-0 z-50 h-screen w-16 md:w-20 hidden md:flex flex-col justify-center border-r border-border/30 bg-background/80 backdrop-blur-sm">
+                <div className="flex flex-col gap-6 px-4">
+                    {navItems.map(({id, label}) => (
+                        <a href={"#" + id} key={id}
+                           className="group relative flex items-center gap-2">
+                            {/* Dot */}
+                            <span
+                                className={cn("h-1.5 w-1.5 rounded-full transition-all duration-300", activeSection === id ? "bg-accent scale-125" : "bg-muted group-hover:bg-foreground/60")}/>
+                            {/* Tooltip */}
+                            <span
+                                className={cn("absolute left-6 font-mono text-[10px] uppercase tracking-widest opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-8 whitespace-nowrap", activeSection === id ? "text-accent" : "text-muted-foreground")}>{label}</span>
+                        </a>
+                    ))}
+                </div>
+            </nav>
+        );
+    }
+
+    // --- Sections ---
+    // Hero section
+    function HeroSection() {
+        const sectionRef = useRef(null);
+        const contentRef = useRef(null);
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                gsap.to(contentRef.current, {
+                    y: -100, opacity: 0,
+                    scrollTrigger: {trigger: sectionRef.current, start: "top top", end: "bottom top", scrub: 1}
+                });
+            }, sectionRef);
+            return () => ctx.revert();
+        }, []);
+
+        // Main code
+        return (
+            <section ref={sectionRef} id="hero"
+                     className="relative min-h-screen flex items-center pl-6 md:pl-28 pr-6 md:pr-12">
+                <AnimatedNoise opacity={0.03}/>
+                <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2">
+                    {/* Left hidden text */}
+                    <span
+                        className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground -rotate-90 origin-left block whitespace-nowrap">
+                            TFJ_5183
+                        </span>
+                </div>
+                <div ref={contentRef} className="flex-1 w-full max-w-5xl">
+                    <div className="flex flex-col md:flex-row items-start gap-12 md:gap-20">
+                        {/* Flip text */}
+                        <SplitFlapAudioProvider>
+                            <div className="relative flex-shrink-0">
+                                <SplitFlapText text="TFJ" speed={80}/>
+                                <div className="mt-4"><SplitFlapMuteToggle/></div>
+                            </div>
+                        </SplitFlapAudioProvider>
+                        <div className="flex-1 pt-2">
+                            <div className="flex items-baseline gap-4 mb-6">
+                                    <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">
+                                        ///
+                                    </span>
+                                {/* Actual title */}
+                                <h2 className="font-display text-muted-foreground/80 text-[clamp(1.25rem,3.5vw,2.5rem)] tracking-wide leading-none">
+                                    Chronically Online Developer
+                                </h2>
+                            </div>
+                            {/* Description */}
+                            <p className="max-w-lg font-mono text-sm text-muted-foreground leading-relaxed border-l-2 border-accent/30 pl-4">
+                                German IT student (Fachinformatiker für Anwendungsentwicklung) hacking through the
+                                cyberpunk dystopia. Powered by neon lights, cats, and jokes. Touching grass
+                                is a deprecated feature.
+                            </p>
+                            {/* Buttons */}
+                            <div className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                                <a href="#work"
+                                   className="group inline-flex items-center gap-3 border border-foreground/20 px-6 py-3 font-mono text-xs uppercase tracking-widest text-foreground hover:border-accent hover:text-accent transition-all duration-200">
+                                    <ScrambleTextOnHover text="View Projects" as="span" duration={0.6}/>
+                                    <BitmapChevron
+                                        className="transition-transform duration-[400ms] ease-in-out group-hover:rotate-45"/>
+                                </a>
+                                <a href="#updates"
+                                   className="font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors duration-200">
+                                    Latest Updates
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {/* Version tag */}
+                <div className="absolute bottom-8 right-8 md:bottom-12 md:right-12">
+                    <div
+                        className="border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        v.2026 / 01 19th
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    // Updates section
+    function UpdatesSection() {
+        const sectionRef = useRef(null);
+        const headerRef = useRef(null);
+        const cardsRef = useRef(null);
+
+        // Updates data
+        const updates = [
+            {
+                date: "2025-09-01",
+                title: "Ausbildung Start",
+                note: "Planning and execution of customer-specific tasks, customer consulting, IT system evaluation, development of IT solutions, quality assurance, implementation of IT security measures, operation of IT systems, programming and application of software."
+            },
+            {
+                date: "2026-01-19",
+                title: "Portfolio v2",
+                note: "Or v3? Whatever. Redesigned my internet corner with proper aesthetics.",
+                link: "/",
+            },
+        ];
+
+        // Animation
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                gsap.fromTo(headerRef.current, {x: -60, opacity: 0}, {
+                    x: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+                const cards = cardsRef.current?.querySelectorAll("article");
+                if (cards) {
+                    gsap.fromTo(cards, {x: -100, opacity: 0}, {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        stagger: 0.2,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: cardsRef.current,
+                            start: "top 90%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                }
+            }, sectionRef);
+            return () => ctx.revert();
+        }, []);
+
+        return (
+            <section id="updates" ref={sectionRef} className="relative py-32 pl-6 md:pl-28">
+                <div ref={headerRef} className="mb-16 pr-6 md:pr-12">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">01 / Updates</span>
+                    <h2 className="mt-4 font-display text-5xl md:text-7xl tracking-tight">RECENT ACTIVITY</h2>
+                </div>
+                <div ref={cardsRef}
+                     className="flex gap-8 overflow-x-auto pb-8 pr-12 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                    {updates.reverse().map((signal, index) => (
+                        <article key={index}
+                                 className="group relative flex-shrink-0 w-80 transition-transform duration-500 ease-out hover:-translate-y-2">
+                            <a href={signal.link}>
+                                <div
+                                    className="relative bg-card border border-border/50 md:border-t md:border-l md:border-r-0 md:border-b-0 p-8">
+                                    <div
+                                        className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent"/>
+                                    <div className="flex items-baseline justify-between mb-8">
+                                            <span
+                                                className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">No. {String(updates.length - index).padStart(2, "0")}</span>
+                                        <time
+                                            className="font-mono text-[10px] text-muted-foreground/60">{signal.date}</time>
+                                    </div>
+                                    <h3 className="font-display text-4xl tracking-tight mb-4 group-hover:text-accent transition-colors duration-300">{signal.title}</h3>
+                                    <div
+                                        className="w-12 h-px bg-accent/60 mb-6 group-hover:w-full transition-all duration-500"/>
+                                    <p className="font-mono text-xs text-muted-foreground leading-relaxed">{signal.note}</p>
+                                    <div className="absolute bottom-0 right-0 w-6 h-6 overflow-hidden">
+                                        <div
+                                            className="absolute bottom-0 right-0 w-8 h-8 bg-background rotate-45 translate-x-4 translate-y-4 border-t border-l border-border/30"/>
+                                    </div>
+                                </div>
+                                <div
+                                    className="absolute inset-0 -z-10 translate-x-1 translate-y-1 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
+                            </a>
+                        </article>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
+    // Projects section
+    function ProjectsSection() {
+        const sectionRef = useRef(null)
+        const headerRef = useRef(null)
+        const gridRef = useRef(null)
+
+        // Projects data
+        const projects = [
+            {
+                title: "[WIP] Its a Vault",
+                medium: "Full Stack",
+                description: "A multi-account local and remote Password manager\nWouldn't recommend in productive",
+                span: "col-span-2 row-span-2"
+            },
+            {
+                title: "Jsoner",
+                medium: "JSON API",
+                description: "GSON wrapper for handling json like yml files",
+                span: "col-span-1 row-span-1",
+                link: "https://github.com/TFJ2021/Jsoner",
+            },
+            {
+                title: "Event attack",
+                medium: "Minecraft",
+                description: "A Craft Attack like minecraft event",
+                span: "col-span-1 row-span-2",
+            },
+            {
+                title: "jump & run game",
+                medium: "Phaser 3 in browser",
+                description: "A infinite snowy jump & run.\nTo be fair, made in a group of 5",
+                span: "col-span-1 row-span-1",
+                link: "https://github.com/Sybit-Education/azubi-game-challenge-2025",
+            },
+            {
+                title: "Varies Discord Bot",
+                medium: "Discord",
+                description: "Varies bots for discord server.\nActivity leaderboard, moderation & administration",
+                span: "col-span-2 row-span-1"
+            },
+            {
+                title: "Jump-Run Plugin",
+                medium: "Weekend Project",
+                description: "A random jump run plugin, because I was bored",
+                span: "col-span-1 row-span-1",
+                link: "https://github.com/TFJ2021/Simple-Parkour-Plugin-new",
+            },
+        ];
+
+        // Load-in animation
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                gsap.fromTo(headerRef.current, {x: -60, opacity: 0}, {
+                    x: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 90%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+                const cards = gridRef.current?.querySelectorAll("article");
+                if (cards) {
+                    gsap.set(cards, {y: 60, opacity: 0});
+                    gsap.to(cards, {
+                        y: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        stagger: 0.1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: gridRef.current,
+                            start: "top 90%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                }
+            }, sectionRef);
+            return () => ctx.revert();
+        }, []);
+
+        return (
+            <section ref={sectionRef} id="work" className="relative py-32 pl-6 md:pl-28 pr-6 md:pr-12">
+                {/* Section title */}
+                <div ref={headerRef} className="mb-16 flex items-end justify-between">
+                    <div>
+                            <span
+                                className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">
+                                02 / Projects
+                            </span>
+                        <h2 className="mt-4 font-display text-5xl md:text-7xl tracking-tight">WHAT I BUILD</h2>
+                    </div>
+                    <p className="hidden md:block max-w-xs font-mono text-xs text-muted-foreground text-right leading-relaxed">
+                        Full-stack apps, APIs, and random stuff<br/> I thought would be cool.
+                    </p>
+                </div>
+                {/* Section content */}
+                <div ref={gridRef}
+                     className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[180px] md:auto-rows-[200px]">
+                    {projects.map((ex, i) => (
+                        <ProjectCard key={i} project={ex} index={i} persistHover={i === 0}/>
+                    ))}
+                </div>
+            </section>
+        )
+    }
+
+    // Project card
+    function ProjectCard({project, index, persistHover = false}) {
+        const [isHovered, setIsHovered] = useState(false);
+        const cardRef = useRef(null);
+        const [isScrollActive, setIsScrollActive] = useState(false);
+        useEffect(() => {
+            if (!persistHover || !cardRef.current) return;
+            ScrollTrigger.create({trigger: cardRef.current, start: "top 80%", onEnter: () => setIsScrollActive(true)});
+        }, [persistHover]);
+        const isActive = isHovered || isScrollActive;
+
+        return (
+            <a
+                href={project.link}
+                target="_blank"
+                ref={cardRef}
+                className={cn("group relative border border-border/40 p-5 flex flex-col justify-between transition-all duration-500 cursor-pointer overflow-hidden", project.span, isActive && "border-accent/60")}
+                onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}
+            >
+                <div
+                    className={cn("absolute inset-0 bg-accent/5 transition-opacity duration-500", isActive ? "opacity-100" : "opacity-0")}/>
+                <div className="relative z-10">
+                    {/* Category */}
+                    <span
+                        className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                            {project.medium}
+                        </span>
+                    {/* Title */}
+                    <h3 className={cn("mt-3 font-display text-2xl md:text-4xl tracking-tight transition-colors duration-300", isActive ? "text-accent" : "text-foreground")}>{project.title}</h3>
+                </div>
+                {/* Description */}
+                <div className="relative z-10">
+                    <p className={cn("font-mono text-xs text-muted-foreground leading-relaxed transition-all duration-500 max-w-[390px] whitespace-pre-line", isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2")}>{project.description}</p>
+                </div>
+                {/* Project number */}
+                <span
+                    className={cn("absolute bottom-4 right-4 font-mono text-[10px] transition-colors duration-300", isActive ? "text-accent" : "text-muted-foreground/40")}>{String(index + 1).padStart(2, "0")}</span>
+                {/* Top right corner */}
+                <div
+                    className={cn("absolute top-0 right-0 w-12 h-12 transition-all duration-500", isActive ? "opacity-100" : "opacity-0")}>
+                    <div className="absolute top-0 right-0 w-full h-[1px] bg-accent"/>
+                    <div className="absolute top-0 right-0 w-[1px] h-full bg-accent"/>
+                </div>
+            </a>
+        )
+    }
+
+    // Skill section
+    function SkillsSection() {
+        const sectionRef = useRef(null);
+        const headerRef = useRef(null);
+        const gridRef = useRef(null);
+
+        // Animations
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                gsap.from(headerRef.current, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+                const skillCards = gridRef.current?.querySelectorAll(".skill-card");
+                if (skillCards) {
+                    // Use fromTo to strictly enforce the end state
+                    gsap.fromTo(skillCards,
+                        {y: 60, opacity: 0},
+                        {
+                            y: 0, opacity: 1,
+                            duration: 0.8, stagger: 0.1, ease: "power3.out",
+                            scrollTrigger: {
+                                trigger: gridRef.current,
+                                start: "top 80%",
+                                toggleActions: "play none none reverse"
+                            }
+                        }
+                    );
+                }
+            }, sectionRef);
+            return () => ctx.revert();
+        }, []);
+
+        // Skills data
+        const skillCategories = [
+            {
+                category: "Languages",
+                skills: ["Type/Java-Script", "Java", "Kotlin"],
+                level: "I'm speaking"
+            },
+            {
+                category: "Backend",
+                skills: ["Java", "Kotlin", "Spring Boot"],
+                level: "Advanced"
+            },
+            {
+                category: "Frontend",
+                skills: ["React", "Tanstack", "Tailwind", "Vanilla HTML & CSS"],
+                level: "Intermediate"
+            },
+
+            {
+                category: "Ecosphere",
+                skills: ["Linux (Zorin OS)", "Docker", "Git"],
+                level: "Daily Driver"
+            },
+            {
+                category: "Toolkit",
+                skills: ["IntelliJ IDEA", "Postman", "Terminal", "WSL"],
+                level: "Essential"
+            },
+            {
+                category: "Currently Learning",
+                skills: ["Grapql", "SQL"],
+                level: "Loading..."
+            },
+        ];
+
+        return (
+            <section id="skills" ref={sectionRef} className="relative py-32 pl-6 md:pl-28 pr-6 md:pr-12">
+                <div ref={headerRef} className="mb-16">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">03 / Skills</span>
+                    <h2 className="mt-4 font-display text-5xl md:text-7xl tracking-tight">TECH STACK</h2>
+                    <p className="mt-6 max-w-2xl font-mono text-sm text-muted-foreground leading-relaxed">Tools and
+                        technologies I work with. Some I know well, others I&apos;m still learning.</p>
+                </div>
+                <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {skillCategories.map((cat, idx) => (
+                        <div key={idx}
+                             className="skill-card border border-border/40 p-6 hover:border-accent/40 transition-all duration-300 group">
+                            <div className="flex items-start justify-between mb-4">
+                                {/* Title */}
+                                <h3 className="font-mono text-sm uppercase tracking-widest text-foreground/90 group-hover:text-accent transition-colors duration-300">{cat.category}</h3>
+                                {/* Level badge */}
+                                <span
+                                    className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground px-2 py-1 border border-border/30">
+                                        {cat.level}
+                                    </span>
+                            </div>
+                            <ul className="space-y-2">
+                                {/* List */}
+                                {cat.skills.map((skill, skillIdx) => (
+                                    <li key={skillIdx}
+                                        className="flex font-mono text-xs text-muted-foreground items-center">
+                                        <span
+                                            className="material-symbols-rounded ext-accent/60 mr-2 text-sm">chevron_forward</span>
+                                        {skill}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
+    // Highlight text helper
+    function HighlightText({children, className = "", parallaxSpeed = 0.3}) {
+        const containerRef = useRef(null);
+        const highlightRef = useRef(null);
+        const textRef = useRef(null);
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                const tl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: containerRef.current,
+                        start: "top 80%",
+                        end: "top -20%",
+                        toggleActions: "play reverse play reverse"
+                    }
+                });
+                tl.fromTo(highlightRef.current, {clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)"}, {
+                    clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+                    duration: 1.4,
+                    ease: "power4.inOut"
+                });
+                tl.fromTo(textRef.current, {color: "rgb(250, 250, 250)"}, {
+                    color: "rgb(10, 10, 10)",
+                    duration: 0.5,
+                    ease: "power2.out"
+                }, 0.6);
+                gsap.to(highlightRef.current, {
+                    skewX: -2,
+                    scrollTrigger: {trigger: containerRef.current, start: "top bottom", end: "bottom top", scrub: 0.5}
+                });
+            }, containerRef);
+            return () => ctx.revert();
+        }, []);
+        return (
+            <span ref={containerRef} className={`relative inline-block px-1 ${className}`}>
+                    <span ref={highlightRef} className="absolute inset-0 bg-accent opacity-90" style={{
+                        left: "-0.15em",
+                        right: "-0.15em",
+                        top: "0.2em",
+                        bottom: "0.15em",
+                        clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
+                        borderRadius: "2px"
+                    }}/>
+                    <span ref={textRef} className="relative z-10 mix-blend-normal">{children}</span>
+                </span>
+        );
+    }
+
+    // Philosophy section
+    function PhilosophySection() {
+        const sectionRef = useRef(null);
+        const headerRef = useRef(null);
+        const principlesRef = useRef(null);
+
+        // Philosophy data
+        const philosophies = [
+            {
+                number: "01",
+                titleParts: [{text: "INTELLIJ", highlight: true}, {text: "USER", highlight: false}],
+                description: "I don't just write code; I refactor it before it's even written. JetBrains pays my bills (metaphorically). I love the slowness especially",
+                align: "left"
+            },
+            {
+                number: "02",
+                titleParts: [{text: "LINUX", highlight: false}, {text: "NATIVE", highlight: true}],
+                description: "Running Zorin because I like my system stable and my windows managed. No forced updates, no bloatware, just pure efficiency.",
+                align: "right"
+            },
+            {
+                number: "03",
+                titleParts: [{text: "DARK", highlight: true}, {text: "HUMOR", highlight: false}],
+                description: "My projects are like a well-kept cemetery: strictly organized, perfectly silent, and filled with things that were once full of life but are now better left undisturbed. If you hear a scream in the logs, it's probably just a legacy feature.",
+                align: "left"
+            },
+            {
+                number: "04",
+                titleParts: [{text: "CHRONICALLY\u00A0", highlight: false}, {text: "ONLINE", highlight: true}],
+                description: "My workflow involves too many browser tabs, a terminal that's always open, and zero coffee. Powered by hydration and internet culture.",
+                align: "right"
+            },
+        ];
+
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                gsap.from(headerRef.current, {
+                    x: -60,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+                const articles = principlesRef.current?.querySelectorAll("article");
+                articles?.forEach((article, index) => {
+                    const isRight = philosophies[index].align === "right";
+                    gsap.from(article, {
+                        x: isRight ? 80 : -80,
+                        opacity: 0,
+                        duration: 1,
+                        ease: "power3.out",
+                        scrollTrigger: {trigger: article, start: "top 85%", toggleActions: "play none none reverse"}
+                    });
+                });
+            }, sectionRef);
+            return () => ctx.revert();
+        }, []);
+
+        return (
+            <section ref={sectionRef} id="principles" className="relative py-32 pl-6 md:pl-28 pr-6 md:pr-12">
+                {/* Section title */}
+                <div ref={headerRef} className="mb-24">
+                        <span
+                            className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">04 / Philosophy</span>
+                    <h2 className="mt-4 font-display text-5xl md:text-7xl tracking-tight">HOW I WORK</h2>
+                </div>
+                {/* Section content */}
+                <div ref={principlesRef} className="space-y-24 md:space-y-32">
+                    {philosophies.map((principle, index) => (
+                        <article key={index}
+                                 className={`flex flex-col ${principle.align === "right" ? "items-end text-right" : "items-start text-left"}`}>
+                                <span
+                                    className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">{principle.number} / {principle.titleParts[0].text.split("\u00A0")[0]}</span>
+                            {/* Titles */}
+                            <h3 className="font-display text-4xl md:text-6xl lg:text-8xl tracking-tight leading-none flex flex-wrap gap-2">
+                                {principle.titleParts.map((part, i) => part.highlight ?
+                                    <HighlightText key={i} parallaxSpeed={0.6}>{part.text}</HighlightText> :
+                                    <span key={i}>{part.text}</span>)}
+                            </h3>
+                            {/* Description */}
+                            <p className="mt-6 max-w-md font-mono text-sm text-muted-foreground leading-relaxed">{principle.description}</p>
+                            <div
+                                className={`mt-8 h-[1px] bg-border w-24 md:w-48 ${principle.align === "right" ? "mr-0" : "ml-0"}`}/>
+                        </article>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
+    // Tech & Stuff section
+    function ColophonSection() {
+        const sectionRef = useRef(null);
+        const headerRef = useRef(null);
+        const gridRef = useRef(null);
+        const footerRef = useRef(null);
+
+        // Tech & Stuff data
+        const specs = [
+            {
+                label: "System",
+                items: [{
+                    label: "OS: Zorin OS 18",
+                    href: "https://zorin.com/os/"
+                }, "Shell: Bash / Zsh", "Browser: Zen", "Terminal: default lmao"]
+            },
+            {
+                label: "Aesthetic",
+                items: ["Font: IBM Plex Sans", {
+                    label: "Vibe: Cyberpunk (Red)",
+                    href: "https://en.wikipedia.org/wiki/Cyberpunk_2077"
+                }, "Theme: Dark Mode Only", "Noise: 3% Opacity"]
+            },
+            {
+                label: "Kernel",
+                items: [
+                    {
+                        label: "Location: Germany",
+                        href: "https://en.wikipedia.org/wiki/Germany"
+                    }, "Uptime: Always Online", "Fuel: Pure Hydration", "Object: Cat Lover"]
+            },
+            {
+                label: "Helpful",
+                items: [
+                    {label: "No hello", href: "https://nohello.net/en/"},
+                ]
+            },
+            {
+                label: "Social",
+                items: [
+                    {label: "GitHub", href: "https://github.com/tfj2021"},
+                    "Discord (tfj_5138)",
+                ]
+            },
+        ];
+
+        useEffect(() => {
+            const ctx = gsap.context(() => {
+                if (headerRef.current) gsap.from(headerRef.current, {
+                    x: -60,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+                if (gridRef.current) {
+                    const columns = gridRef.current.querySelectorAll(":scope > div");
+                    gsap.from(columns, {
+                        y: 40,
+                        opacity: 0,
+                        duration: 0.8,
+                        stagger: 0.1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: gridRef.current,
+                            start: "top 85%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                }
+                if (footerRef.current) gsap.from(footerRef.current, {
+                    y: 20,
+                    opacity: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: footerRef.current,
+                        start: "top 95%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+            }, sectionRef);
+            return () => ctx.revert();
+        }, []);
+
+        return (
+            <section ref={sectionRef} id="colophon"
+                     className="relative pb-10 pl-6 md:pl-28 pr-6 md:pr-12 border-t border-border/30">
+                {/* Title */}
+                <div ref={headerRef} className="mb-16">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">05 / Info</span>
+                    <h2 className="mt-4 font-display text-5xl md:text-7xl tracking-tight">TECH & STUFF</h2>
+                </div>
+                <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-12">
+                    {specs.map((spec, i) => (
+                        <div key={i} className="col-span-1">
+                            <h4 className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground mb-4">{spec.label}</h4>
+                            <ul className="space-y-2">
+                                {spec.items.map((item, j) => (
+                                    <li key={j} className="font-mono text-xs text-foreground/80">
+                                        {typeof item === 'string' ? (
+                                            item
+                                        ) : (
+                                            <a
+                                                target="_blank"
+                                                href={item.href}
+                                                className="hover:text-accent transition-colors duration-200"
+                                            >
+                                                {item.label}
+                                            </a>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Footer */}
+                <div ref={footerRef}
+                     className="mt-24 pt-8 border-t border-border/20 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="material-symbols-rounded text-sm">copyright</span>
+                        2026 TFJ.
+                        Designed with v0.
+                    </p>
+                    <p className="font-mono text-[10px] text-muted-foreground">
+                        Powered by cats and terminal sessions.
+                    </p>
+                </div>
+            </section>
+        );
+    }
+
+    // --- Main App ---
+    function App() {
+        return (
+            <SmoothScroll>
+                <GlobalCursor/>
+                <SideNav/>
+                <div className="noise-overlay" aria-hidden="true"/>
+                <div className="grid-bg fixed inset-0 opacity-30" aria-hidden="true"/>
+                <main className="relative z-10 min-h-screen">
+                    <HeroSection/>
+                    <UpdatesSection/>
+                    <ProjectsSection/>
+                    <SkillsSection/>
+                    <PhilosophySection/>
+                    <ColophonSection/>
+                </main>
+            </SmoothScroll>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App/>);
+
+</script>
+</body>
+
+</html>
