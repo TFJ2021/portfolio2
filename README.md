@@ -4,12 +4,6 @@
 > IK, it wasn't the greatest idea to put everything in one file
 
 
-## <img src="https://cdn.jsdelivr.net/gh/Readme-Workflows/Readme-Icons@main/icons/octicons/IssueOpened.svg"> Features
-
-* Responsive design (desktop, tablet, mobile)
-* Modern UI with clean typography and spacing
-* About me & skills overview
-
 ## <img src="https://cdn.jsdelivr.net/gh/Readme-Workflows/Readme-Icons@main/icons/octicons/Repository.svg"> Tech Stack
 
 * **Frontend:** React
@@ -22,6 +16,7 @@
 ```
 portfolio-v2/
 ├─ .gitignore
+├─ CNAME
 ├─ favicon.png
 ├─ index.html
 ├─ LICENSE
